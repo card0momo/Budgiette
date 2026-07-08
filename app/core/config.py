@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     debug: bool = True
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/budgiette"
+    secret_key: str = "change-me-in-production-use-a-long-random-secret-key"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7
 
     model_config = SettingsConfigDict(
         env_file=".env",
