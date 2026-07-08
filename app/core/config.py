@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production-use-a-long-random-secret-key"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7
+    cors_allow_origins: list[str] = ["http://localhost:3000"]
 
     model_config = SettingsConfigDict(
         env_file=".env",
