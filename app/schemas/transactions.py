@@ -17,6 +17,15 @@ class TransactionCreate(APIModel):
     source: str = "manual"
 
 
+class TransactionUpdate(APIModel):
+    category_id: int | None = None
+    merchant_name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    direction: TransactionDirection | None = None
+    amount: Decimal | None = Field(default=None, gt=0)
+    occurred_at: datetime | None = None
+
+
 class TransactionRead(APIModel):
     id: int
     user_id: int
