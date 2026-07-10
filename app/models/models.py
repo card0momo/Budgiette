@@ -2,7 +2,19 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 
-from sqlalchemy import Boolean, Date, DateTime, Enum as SqlEnum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Enum as SqlEnum,
+    ForeignKey,
+    Integer,
+    JSON,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
@@ -52,6 +64,10 @@ class Account(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     provider: Mapped[str] = mapped_column(String(120), nullable=False)
+    nickname: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    account_number: Mapped[str | None] = mapped_column(String(60), nullable=True)
+
+    transactions: Mapped[list["Transaction"]] = relationship(back_populates="account")
 
 
 class Card(Base):
@@ -83,6 +99,7 @@ class Transaction(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"), nullable=True)
+    account_id: Mapped[int | None] = mapped_column(ForeignKey("accounts.id"), nullable=True, index=True)
     merchant_name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="", nullable=False)
     direction: Mapped[TransactionDirection] = mapped_column(SqlEnum(TransactionDirection), nullable=False)
@@ -92,6 +109,7 @@ class Transaction(Base):
 
     user: Mapped[User] = relationship(back_populates="transactions")
     category: Mapped[Category | None] = relationship(back_populates="transactions")
+    account: Mapped[Account | None] = relationship(back_populates="transactions")
 
 
 class Budget(Base):
@@ -162,6 +180,11 @@ class IngestionMailbox(Base):
     port: Mapped[int] = mapped_column(Integer, nullable=False, default=993)
     use_ssl: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    encrypted_password: Mapped[str] = mapped_column(String(500), nullable=False)
+    enabled_banks: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    sync_start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_sync_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user: Mapped[User] = relationship(back_populates="mailboxes")
     messages: Mapped[list["IngestionMessage"]] = relationship(back_populates="mailbox", cascade="all, delete-orphan")
@@ -169,13 +192,16 @@ class IngestionMailbox(Base):
 
 class IngestionMessage(Base):
     __tablename__ = "ingestion_messages"
+    __table_args__ = (UniqueConstraint("mailbox_id", "message_id", name="uq_ingestion_message_mailbox_message_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     mailbox_id: Mapped[int] = mapped_column(ForeignKey("ingestion_mailboxes.id"), nullable=False, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    transaction_id: Mapped[int | None] = mapped_column(ForeignKey("transactions.id"), nullable=True)
     message_id: Mapped[str] = mapped_column(String(255), nullable=False)
     subject: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(30), default="received", nullable=False)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     mailbox: Mapped[IngestionMailbox] = relationship(back_populates="messages")

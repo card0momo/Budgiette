@@ -1,0 +1,25 @@
+Content-Type: multipart/related;
+ boundary="===============1715162453129495886=="
+MIME-Version: 1.0
+Subject: Servicio de Alertas HeyBanco
+From: alertas@heybanco.com
+To: finanzas@example.com
+Date: Wed, 8 Jul 2026 15:43:48 +0000
+Message-ID: <fixture-card-purchase@example.com>
+
+--===============1715162453129495886==
+Content-Type: text/html; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+
+CjwhRE9DVFlQRSBodG1sPgo8aHRtbD4KPGJvZHk+CjxoMj5IZXksIE1BUklBIFNBTVBMRSBURVNU
+VVNFUjwvaDI+CjxoND5MYSB0cmFuc2FjY2kmb2FjdXRlO24gcXVlIHJlYWxpemFzdGUgY29uIHR1
+IDxiPkRlYml0bzwvYj4gSGV5IGNvbiB0ZXJtaW5hY2kmb2FjdXRlO24gPGI+KioxMjM0PC9iPiBm
+dWUgZXhpdG9zYS48YnIgLz48YnIgLz5Fc3RvcyBzb24gbG9zIGRldGFsbGVzIGRlIHR1IGNvbXBy
+YTo8L2g0Pgo8dGFibGU+Cjx0cj48dGQ+CjxoND5Db21lcmNpbzo8L2g0Pgo8aDQ+VElFTkRBIERF
+TU8gU0FNUExFIE1YPC9oND4KPC90ZD48L3RyPgo8dHI+PHRkPgo8aDQ+Q2FudGlkYWQ6PC9oND4K
+PGg0PiQ1NS4wMDwvaDQ+CjwvdGQ+PC90cj4KPHRyPjx0ZD4KPGg0PkZlY2hhIHkgaG9yYSBkZSBs
+YSB0cmFuc2FjY2kmb2FjdXRlO246PC9oND4KPGg0PjA4LzA3LzIwMjYgLSAwOTo0NCBocnM8L2g0
+Pgo8L3RkPjwvdHI+CjwvdGFibGU+CjwvYm9keT4KPC9odG1sPgo=
+
+--===============1715162453129495886==--

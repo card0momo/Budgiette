@@ -21,6 +21,7 @@ class TransactionRead(APIModel):
     id: int
     user_id: int
     category_id: int | None = None
+    account_id: int | None = None
     merchant_name: str
     description: str
     direction: TransactionDirection

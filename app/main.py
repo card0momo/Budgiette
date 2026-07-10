@@ -1,19 +1,52 @@
+import logging
 from contextlib import asynccontextmanager
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.db.base import Base
-from app.db.session import engine
+from app.db.session import SessionLocal, engine
+from app.models.models import IngestionMailbox
+from app.services.ingestion_service import sync_mailbox
+
+logger = logging.getLogger(__name__)
+
+
+def sync_all_active_mailboxes() -> None:
+    db = SessionLocal()
+    try:
+        mailboxes = db.execute(select(IngestionMailbox).where(IngestionMailbox.is_active)).scalars().all()
+        for mailbox in mailboxes:
+            try:
+                sync_mailbox(db, mailbox)
+            except Exception:
+                logger.exception("Scheduled sync failed for mailbox %s", mailbox.id)
+    finally:
+        db.close()
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Temporary bootstrapping for local development.
     Base.metadata.create_all(bind=engine)
+
+    settings = get_settings()
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(
+        sync_all_active_mailboxes,
+        "interval",
+        minutes=settings.sync_interval_minutes,
+        id="sync_active_mailboxes",
+    )
+    scheduler.start()
+
     yield
+
+    scheduler.shutdown()
 
 
 def create_application() -> FastAPI:

@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7
     cors_allow_origins: list[str] = ["http://localhost:3000"]
+    mailbox_credential_key: str
+    sync_interval_minutes: int = 30
 
     model_config = SettingsConfigDict(
         env_file=".env",
