@@ -97,6 +97,17 @@ def delete_plan(
     db.commit()
 
 
+@router.get("/payments", response_model=list[MSIPaymentRead])
+def list_all_payments(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+) -> list[MSIPaymentRead]:
+    rows = db.execute(
+        select(MSIPayment).where(MSIPayment.user_id == user_id).order_by(MSIPayment.paid_on.desc())
+    ).scalars().all()
+    return [MSIPaymentRead.model_validate(item) for item in rows]
+
+
 @router.post("/plans/{plan_id}/payments", response_model=MSIPaymentRead, status_code=status.HTTP_201_CREATED)
 def register_payment(
     plan_id: int,
