@@ -36,6 +36,8 @@ class NotificationType(str, Enum):
     SPENDING_SPIKE = "spending_spike"
     MSI_DUE = "msi_due"
     MSI_LATE = "msi_late"
+    NEW_TRANSACTIONS = "new_transactions"
+    SYNC_FAILED = "sync_failed"
 
 
 class User(Base):
@@ -54,6 +56,13 @@ class User(Base):
     budgets: Mapped[list["Budget"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     msi_plans: Mapped[list["MSIPlan"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     notifications: Mapped[list["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    push_tokens: Mapped[list["PushToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    web_push_subscriptions: Mapped[list["WebPushSubscription"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    notification_preference: Mapped["NotificationPreference | None"] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
     mailboxes: Mapped[list["IngestionMailbox"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
@@ -164,10 +173,54 @@ class Notification(Base):
     type: Mapped[NotificationType] = mapped_column(SqlEnum(NotificationType), nullable=False)
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
+    related_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    related_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     user: Mapped[User] = relationship(back_populates="notifications")
+
+
+class PushToken(Base):
+    __tablename__ = "push_tokens"
+    __table_args__ = (UniqueConstraint("user_id", "token", name="uq_push_token_user_token"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    token: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="push_tokens")
+
+
+class WebPushSubscription(Base):
+    __tablename__ = "web_push_subscriptions"
+    __table_args__ = (UniqueConstraint("user_id", "endpoint", name="uq_web_push_user_endpoint"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    endpoint: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+    p256dh_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    auth_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="web_push_subscriptions")
+
+
+class NotificationPreference(Base):
+    __tablename__ = "notification_preferences"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    push_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    budget_alerts_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    msi_reminders_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    ingestion_alerts_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    sync_failure_alerts_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="notification_preference")
 
 
 class IngestionMailbox(Base):

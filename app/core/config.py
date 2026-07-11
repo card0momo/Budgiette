@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     cors_allow_origins: list[str] = ["http://localhost:3000"]
     mailbox_credential_key: str
     sync_interval_minutes: int = 30
+    notification_check_interval_minutes: int = 60
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = "mailto:support@example.com"
 
     model_config = SettingsConfigDict(
         env_file=".env",

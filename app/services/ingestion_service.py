@@ -6,9 +6,10 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.models import Account, IngestionMailbox, IngestionMessage, Transaction
+from app.models.models import Account, IngestionMailbox, IngestionMessage, NotificationType, Transaction
 from app.services.bank_parsers import BANK_PARSERS
 from app.services.imap_service import fetch_messages
+from app.services.notification_service import notify
 
 
 @dataclass
@@ -39,6 +40,15 @@ def sync_mailbox(db: Session, mailbox: IngestionMailbox) -> SyncResult:
     except Exception as exc:  # IMAP/network failures shouldn't crash the sync loop
         mailbox.last_sync_error = str(exc)
         db.commit()
+        notify(
+            db,
+            mailbox.user_id,
+            NotificationType.SYNC_FAILED,
+            title=f"Mailbox sync failed: {mailbox.email_address}",
+            message=str(exc),
+            related_type="mailbox",
+            related_id=mailbox.id,
+        )
         return SyncResult(fetched=0, created=0)
 
     created = 0
@@ -97,4 +107,16 @@ def sync_mailbox(db: Session, mailbox: IngestionMailbox) -> SyncResult:
     mailbox.last_synced_at = datetime.utcnow()
     mailbox.last_sync_error = None
     db.commit()
+
+    if created > 0:
+        notify(
+            db,
+            mailbox.user_id,
+            NotificationType.NEW_TRANSACTIONS,
+            title="New transactions",
+            message=f"{created} new transaction(s) from {mailbox.email_address}.",
+            related_type="mailbox",
+            related_id=mailbox.id,
+        )
+
     return SyncResult(fetched=len(raw_emails), created=created)

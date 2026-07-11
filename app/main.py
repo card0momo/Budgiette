@@ -10,8 +10,9 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.db.base import Base
 from app.db.session import SessionLocal, engine
-from app.models.models import IngestionMailbox
+from app.models.models import IngestionMailbox, User
 from app.services.ingestion_service import sync_mailbox
+from app.services.notification_service import check_all
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,16 @@ def sync_all_active_mailboxes() -> None:
         db.close()
 
 
+def run_notification_checks() -> None:
+    db = SessionLocal()
+    try:
+        user_ids = db.execute(select(User.id).where(User.is_active)).scalars().all()
+        for user_id in user_ids:
+            check_all(db, user_id)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Temporary bootstrapping for local development.
@@ -41,6 +52,12 @@ async def lifespan(_: FastAPI):
         "interval",
         minutes=settings.sync_interval_minutes,
         id="sync_active_mailboxes",
+    )
+    scheduler.add_job(
+        run_notification_checks,
+        "interval",
+        minutes=settings.notification_check_interval_minutes,
+        id="run_notification_checks",
     )
     scheduler.start()
 
