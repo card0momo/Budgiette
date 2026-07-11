@@ -7,6 +7,7 @@ from app.schemas.common import APIModel
 
 
 class MSIPlanCreate(APIModel):
+    card_id: int | None = None
     purchase_name: str = Field(min_length=1, max_length=200)
     start_date: date
     total_amount: Decimal = Field(gt=0)
@@ -14,9 +15,19 @@ class MSIPlanCreate(APIModel):
     monthly_payment: Decimal = Field(gt=0)
 
 
+class MSIPlanUpdate(APIModel):
+    card_id: int | None = None
+    purchase_name: str | None = Field(default=None, min_length=1, max_length=200)
+    start_date: date | None = None
+    total_amount: Decimal | None = Field(default=None, gt=0)
+    months_total: int | None = Field(default=None, gt=0)
+    monthly_payment: Decimal | None = Field(default=None, gt=0)
+
+
 class MSIPlanRead(APIModel):
     id: int
     user_id: int
+    card_id: int | None
     purchase_name: str
     start_date: date
     total_amount: Decimal

@@ -1,13 +1,13 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user_id
 from app.db.session import get_db
-from app.models.models import Budget
-from app.schemas.budgets import BudgetCreate, BudgetRead, BudgetStatus
+from app.models.models import Budget, Category
+from app.schemas.budgets import BudgetCreate, BudgetRead, BudgetStatus, BudgetUpdate
 from app.services.budget_service import budget_spent
 
 router = APIRouter(prefix="/budgets", tags=["budgets"])
@@ -33,6 +33,50 @@ def create_budget(
     db.commit()
     db.refresh(item)
     return BudgetRead.model_validate(item)
+
+
+@router.patch("/{budget_id}", response_model=BudgetRead)
+def update_budget(
+    budget_id: int,
+    payload: BudgetUpdate,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+) -> BudgetRead:
+    budget = db.execute(
+        select(Budget).where(Budget.id == budget_id, Budget.user_id == user_id)
+    ).scalar_one_or_none()
+    if budget is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
+
+    updates = payload.model_dump(exclude_unset=True)
+
+    if "category_id" in updates and updates["category_id"] is not None:
+        category = db.get(Category, updates["category_id"])
+        if category is None or category.user_id != user_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category")
+
+    for field, value in updates.items():
+        setattr(budget, field, value)
+
+    db.commit()
+    db.refresh(budget)
+    return BudgetRead.model_validate(budget)
+
+
+@router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_budget(
+    budget_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+) -> None:
+    budget = db.execute(
+        select(Budget).where(Budget.id == budget_id, Budget.user_id == user_id)
+    ).scalar_one_or_none()
+    if budget is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found")
+
+    db.delete(budget)
+    db.commit()
 
 
 @router.get("/status", response_model=list[BudgetStatus])

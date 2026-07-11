@@ -64,6 +64,7 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     mailboxes: Mapped[list["IngestionMailbox"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    cards: Mapped[list["Card"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Account(Base):
@@ -88,6 +89,8 @@ class Card(Base):
     nickname: Mapped[str] = mapped_column(String(120), nullable=False)
     network: Mapped[str] = mapped_column(String(30), nullable=False)
     last4: Mapped[str] = mapped_column(String(4), nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="cards")
 
 
 class Category(Base):
@@ -141,6 +144,7 @@ class MSIPlan(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    card_id: Mapped[int | None] = mapped_column(ForeignKey("cards.id", ondelete="SET NULL"), nullable=True)
     purchase_name: Mapped[str] = mapped_column(String(200), nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)

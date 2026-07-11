@@ -15,6 +15,15 @@ class BudgetCreate(APIModel):
     starts_on: date
 
 
+class BudgetUpdate(APIModel):
+    category_id: int | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    period: BudgetPeriod | None = None
+    limit_amount: Decimal | None = Field(default=None, gt=0)
+    starts_on: date | None = None
+    is_active: bool | None = None
+
+
 class BudgetRead(APIModel):
     id: int
     user_id: int
