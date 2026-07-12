@@ -119,12 +119,18 @@ def register_payment(
     if not plan:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MSI plan not found")
 
-    payment = MSIPayment(msi_plan_id=plan.id, user_id=user_id, **payload.model_dump())
+    payment_data = payload.model_dump(exclude={"settle_in_full"})
+    payment = MSIPayment(msi_plan_id=plan.id, user_id=user_id, **payment_data)
     db.add(payment)
 
-    plan.payments_done += 1
-    if Decimal(plan.payments_done) * Decimal(plan.monthly_payment) > Decimal(plan.total_amount):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment exceeds outstanding balance")
+    if payload.settle_in_full:
+        # A lump-sum payoff settles every remaining month at once, rather than
+        # advancing the plan by a single installment.
+        plan.payments_done = plan.months_total
+    else:
+        plan.payments_done += 1
+        if Decimal(plan.payments_done) * Decimal(plan.monthly_payment) > Decimal(plan.total_amount):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment exceeds outstanding balance")
 
     db.commit()
     db.refresh(payment)

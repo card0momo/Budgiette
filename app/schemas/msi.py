@@ -41,6 +41,7 @@ class MSIPaymentCreate(APIModel):
     paid_on: date
     amount: Decimal = Field(gt=0)
     payment_source: str = Field(min_length=1, max_length=120)
+    settle_in_full: bool = False
 
 
 class MSIPaymentRead(APIModel):
